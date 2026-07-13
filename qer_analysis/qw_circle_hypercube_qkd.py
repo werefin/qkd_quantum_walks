@@ -98,9 +98,11 @@ class QW_Circle:
         Returns:
         Quantum circuit with an added walk step
         """
-        # Apply the coin rotation (U3 gate)
-        coin_operator = self.coin_rotation_operator(coin_r)
-        q_circuit.unitary(coin_operator, coin_r, label="R")
+        # Apply the coin rotation (U3 gate) directly per qubit
+        # Rotation is separable (tensor product of identical single-qubit gates)
+        # Applying it qubit-by-qubit avoids materialising a dense operator
+        for qubit in coin_r:
+            q_circuit.u(self.theta, self.phi, 0, qubit)
         # Shift operations
         # Right shift (coin is \ket{1}) or left shift (coin is \ket{0})
         for i in reversed(range(len(walker_r))):
@@ -211,31 +213,33 @@ class QW_Hypercube:
         shift = self.shift_operator(walker_r, coin_r)
         walk_step = QuantumCircuit(walker_r, coin_r)
         if self.coin_type == 'generic_rotation':
-            coin_operator = self.coin_rotation_operator(coin_r)
-            walk_step.unitary(coin_operator, coin_r, label="R")
+            # Apply the coin rotation directly per qubit
+            # Operation is a tensor product of identical single-qubit U gates
+            for qubit in coin_r:
+                walk_step.u(self.theta, self.phi, 0, qubit)
         elif self.coin_type == 'grover':
             coin_operator = self.grover_coin(coin_r)
             walk_step.unitary(coin_operator, coin_r, label="G")
         walk_step.compose(shift, inplace=True)
         return walk_step
 
-    def apply_F(self, coin_r):
+    def apply_F(self, q_circuit, coin_r):
         """
-        Create an operator for the specified F operator to be applied to the coin register
+        Apply the specified F operator to the coin register
+        F is separable (H, or H followed by S, on each coin qubit), so it is
+        applied qubit-by-qubit directly onto the given circuit instead of
+        building a dense 2**len(coin_r) operator
+        Args:
+        q_circuit (QuantumCircuit): circuit to append the F operator to
+        coin_r (QuantumRegister): coin register to apply F to
         """
-        # Create a quantum circuit for the coin operation
-        q_circuit = QuantumCircuit(len(coin_r))
-        # Apply the specified operation to each qubit
-        for qubit in range(len(coin_r)):
+        for qubit in coin_r:
             if self.F == "X":
                 q_circuit.h(qubit)
             elif self.F == "Y":
                 q_circuit.h(qubit)
                 q_circuit.s(qubit)
             # Identity operator is the default behavior (no gate added)
-        # Convert the circuit to an operator
-        operator_F = Operator(q_circuit)
-        return operator_F
 
     def _build_circuit(self):
         """
@@ -243,7 +247,7 @@ class QW_Hypercube:
         """
         if self.coin_type == 'generic_rotation':
             # Apply the F operator before evolving the walk
-            self.circuit.unitary(self.apply_F(self.coin_r), self.coin_r, label="F")
+            self.apply_F(self.circuit, self.coin_r)
             self.circuit.barrier()
         # Perform the quantum walk for the specified number of steps
         for _ in range(self.t):

@@ -2,10 +2,8 @@
 
 This repository is the official open-source simulation framework for the paper:
 
-> **Strengthening security and noise resistance in one-way quantum key distribution protocols through hypercube-based quantum walks**
-> David Polzoni, Tommaso Bianchi, Mauro Conti
-> *IEEE International Conference on Quantum Computing and Engineering (QCE), 2026*
-> Preprint: arXiv:2602.23261 [cs.CR]: https://arxiv.org/abs/2602.23261
+> **Strengthening security and noise resistance in one-way quantum key distribution protocols through hypercube-based quantum walks**:
+> David Polzoni, Tommaso Bianchi, Mauro Conti, *IEEE International Conference on Quantum Computing and Engineering (QCE), 2026*, preprint: arXiv:2602.23261 [cs.CR]: https://arxiv.org/abs/2602.23261
 
 The paper is published at **IEEE QCE26**. Until the proceedings version is available, please refer to the arXiv preprint linked above.
 

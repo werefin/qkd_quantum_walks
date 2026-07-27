@@ -30,7 +30,7 @@ output_folder = "/home/david/Desktop/plot"
 # Plot 1: QER max for circle
 plt.figure(figsize=(12, 8))
 plt.bar(circle_P, circle_qer_z, color='black', alpha=0.7)
-plt.title('Maximally tolerated QER vs circle state space $P$: $F = I$, $\phi = 0$, $\\theta = \pi / 4$', fontsize=16)
+plt.title(r'Maximally tolerated QER vs circle state space $P$: $F = I$, $\phi = 0$, $\theta = \pi / 4$', fontsize=16)
 plt.xlabel('Circle state space $P$', fontsize=16)
 plt.ylabel('Amplitude-phase damping noise $Q$', fontsize=16)
 plt.xticks(ticks=circle_P, labels=circle_P, fontsize=14)
@@ -44,7 +44,7 @@ plt.show()
 # Plot 2: QER max for hypercube
 plt.figure(figsize=(12, 8))
 plt.bar(hypercube_P, hypercube_qer_z, color='gray', alpha=0.7)
-plt.title('Maximally tolerated QER vs hypercube state space $P$: $F = I$, $\phi = 0$, $\\theta = \pi / 4$', fontsize=16)
+plt.title(r'Maximally tolerated QER vs hypercube state space $P$: $F = I$, $\phi = 0$, $\theta = \pi / 4$', fontsize=16)
 plt.xlabel('Hypercube state space $P$', fontsize=16)
 plt.ylabel('Amplitude-phase damping $Q$', fontsize=16)
 plt.xticks(ticks=hypercube_P, labels=hypercube_P, fontsize=14)

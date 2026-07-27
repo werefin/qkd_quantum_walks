@@ -46,7 +46,7 @@ plt.xticks(ticks=custom_positions, labels=filtered_P, fontsize=14)
 plt.yticks(fontsize=14)
 
 # Add plot title and axis labels
-plt.title('Security parameter $c$ vs circle state space $P$: $F = I$, $\phi = 0$, $\\theta = \pi / 4$', fontsize=16)
+plt.title(r'Security parameter $c$ vs circle state space $P$: $F = I$, $\phi = 0$, $\theta = \pi / 4$', fontsize=16)
 plt.xlabel('Circle state space $P$', fontsize=16)
 plt.ylabel('Security parameter $c$', fontsize=16)
 plt.grid(False)

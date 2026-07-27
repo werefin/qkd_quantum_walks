@@ -24,7 +24,7 @@ plt.figure(figsize=(12, 8))
 bars = plt.bar(range(len(P_vals)), c_vals, width=0.6, color='gray', alpha=0.7) # changed color for distinction
 
 # Customize plot
-plt.title('Security parameter $c$ vs hypercube state space $P$: $F = I$, $\phi = 0$, $\\theta = \pi / 4$', fontsize=18)
+plt.title(r'Security parameter $c$ vs hypercube state space $P$: $F = I$, $\phi = 0$, $\theta = \pi / 4$', fontsize=18)
 plt.xlabel('Hypercube state space $P$', fontsize=16)
 plt.ylabel('Security parameter $c$', fontsize=16)
 

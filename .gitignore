@@ -9,3 +9,9 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 *.nbconvert.ipynb
+
+# Packaging / virtual envs
+.venv*/
+*.egg-info/
+build/
+dist/

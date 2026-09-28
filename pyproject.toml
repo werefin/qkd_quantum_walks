@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qkd-qw"
+version = "1.0.0"
+description = "One-way QKD protocols based on discrete-time quantum walks over circle and hypercube topologies (IEEE QCE 2026 companion code)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "David Polzoni" },
+    { name = "Tommaso Bianchi" },
+    { name = "Mauro Conti" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "qiskit>=1.0",
+    "qiskit-aer",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+repository = "https://github.com/werefin/qkd_quantum_walks"
+
+[project.optional-dependencies]
+plots = ["matplotlib"]
+notebook = ["notebook", "matplotlib"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -22,10 +22,12 @@ Together, these results establish a foundation for the design of *topology-aware
 
 | Path | Contents |
 | --- | --- |
-| [c_analysis/](c_analysis/) | Quantum walk circuits for both topologies ([qw_circle_hypercube.py](c_analysis/qw_circle_hypercube.py)) and the computation of the overlap parameter $c$ and of $\log_2(1/c)$ for circle ([main_c_circle.py](c_analysis/main_c_circle.py)) and hypercube ([main_c_hypercube.py](c_analysis/main_c_hypercube.py)). Results are cached in `c_analysis/c_results/`. |
-| [qer_analysis/](qer_analysis/) | QKD protocol itself ([qkd_protocol.py](qer_analysis/qkd_protocol.py)), the QW backends used by it ([qw_circle_hypercube_qkd.py](qer_analysis/qw_circle_hypercube_qkd.py)), Qiskit noise models ([noise_models.py](qer_analysis/noise_models.py)), and Quantum Error Rate (QER) sweeps under depolarizing noise ([main_dn.py](qer_analysis/main_dn.py)) and under combined amplitude/phase damping ([main_dmp.py](qer_analysis/main_dmp.py)). |
-| [optimized_parameters/](optimized_parameters/) | Grid searches over the protocol parameters ($P$, $F$, $\phi$, $\theta$, $t$) that minimise $c$ ([main_opt_param_c.py](optimized_parameters/main_opt_param_c.py)) and the corresponding QER-optimal settings, stored in `optimized_parameters/optimal_results/`. |
+| [src/qkd_qw/](src/qkd_qw/) | Installable library: QW circuits ([walks.py](src/qkd_qw/walks.py), [walks_qkd.py](src/qkd_qw/walks_qkd.py)), the QKD protocol ([protocol.py](src/qkd_qw/protocol.py)) and noise models ([noise.py](src/qkd_qw/noise.py)). This is the canonical implementation; see [Performance](#performance) below. |
+| [c_analysis/](c_analysis/) | Computation of the overlap parameter $c$ and of $\log_2(1/c)$ for circle ([main_c_circle.py](c_analysis/main_c_circle.py)) and hypercube ([main_c_hypercube.py](c_analysis/main_c_hypercube.py)). |
+| [qer_analysis/](qer_analysis/) | Quantum Error Rate (QER) sweeps under depolarizing noise ([main_dn.py](qer_analysis/main_dn.py)) and under combined amplitude/phase damping ([main_dmp.py](qer_analysis/main_dmp.py)). |
+| [optimized_parameters/](optimized_parameters/) | Grid searches over the protocol parameters ($P$, $F$, $\phi$, $\theta$, $t$) that minimise $c$ ([main_opt_param_c.py](optimized_parameters/main_opt_param_c.py)) and the corresponding QER-optimal settings ([main_opt_param_qer_dn.py](qer_analysis/main_opt_param_qer_dn.py), [main_opt_param_qer_dmp.py](qer_analysis/main_opt_param_qer_dmp.py)). |
 | [plot_scripts/](plot_scripts/) | Scripts that reproduce the figures of the paper from the JSON result files. |
+| [results/](results/) | All JSON/PNG outputs from the scripts above, organized by module: `c_analysis/`, `optimized_parameters/`, `qer_analysis/`, `plots/`. Official results for the IEEE QCE26 paper. |
 | [intro_quantum_walks_qkd.ipynb](intro_quantum_walks_qkd.ipynb) | Tutorial notebook: step-by-step construction of the QW circuits and of the one-way QKD protocol, with plots. |
 
 ### Noise models
@@ -42,19 +44,20 @@ QER scripts perform a binary search over the noise strength to find the maximum 
 ```bash
 git clone <this-repository>
 cd qkd_quantum_walks
-pip install qiskit qiskit-aer numpy matplotlib notebook
+pip install -e .            # installs the qkd_qw library (numpy, qiskit, qiskit-aer)
+pip install -e ".[notebook]" # optional: matplotlib + jupyter, for plots and the tutorial
 ```
 
 #### Running the simulations
 
 ```bash
-# Overlap parameter c for the hypercube topology
+# Overlap parameter c for the hypercube topology -> results/c_analysis/
 python c_analysis/main_c_hypercube.py
 
-# QER under depolarizing noise
+# QER under depolarizing noise -> results/qer_analysis/
 python qer_analysis/main_dn.py
 
-# Reproduce a figure from cached results
+# Reproduce a figure from results/ -> results/plots/
 python plot_scripts/plot_c_results_comparison.py
 ```
 
@@ -64,9 +67,18 @@ The tutorial notebook can be opened directly:
 jupyter notebook intro_quantum_walks_qkd.ipynb
 ```
 
-> **Note**: `main_*.py` scripts were written to read from and write to a companion results repository, and contain a `GITHUB_USERNAME`/`GITHUB_PAT` block at the top for that purpose. Set those variables to your own values, or edit `repo_dir` to point at the local `c_results/` and `optimal_results/` directories already included here.
+All scripts read/write JSON and PNG outputs under [results/](results/) (relative to the repository root), and are parameterized at the top of each file (number of iterations, $P$ values, $F$, $\phi$, $\theta$), so different scenarios can be explored by editing those constants.
 
-All simulations are parameterized at the top of each script (number of iterations, $P$ values, $F$, $\phi$, $\theta$, number of shots), so different scenarios can be explored by editing those constants.
+### Performance
+
+The `qkd_qw` library is the canonical implementation behind every script in this repository (`c_analysis/`, `qer_analysis/` and `optimized_parameters/` import it through thin backward-compatible shims), and it is built for speed:
+
+- **Exact, incremental overlap-parameter search** (`QW_Circle.sweep_min_c` / `QW_Hypercube.sweep_min_c`): security parameter $c(t) = \max_x |\alpha_{x,y}|^2$ (Eq. 18 of the paper) is computed exactly (no shot noise) through Aer, evolved step by step in exponentially growing chunks that resume from the previous chunk's saved statevector, instead of rebuilding a depth-$t$ circuit and estimating $c$ from `shots=100000` at every $t$ explored. Aer is used rather than `qiskit.quantum_info.Statevector` because the latter's default multi-controlled-X synthesis is exponential in the number of controls (measured: a single hypercube step at $P=5$ took 29ms but 40s at $P=9$); Aer applies `mcx` natively, closing that gap. The search stops once 5000 steps pass without a new minimum (a discrete-time quantum walk is unitary and never truly settles, so a plain plateau/tolerance check on its own is not reliable --> see the note below). This is available as a faster alternative for future `c` computations.
+- **Batched, cached QKD protocol simulation** (`QKD_Protocol_QW.run_protocol`): a protocol run is grouped by its $(w_A, i_A, w_B)$ circuit signature, each distinct circuit is transpiled once against a noise-matched simulator (cached across noise levels sharing the same noise-model gate signature too), and simulated with `shots=<group size>` instead of one job per iteration. Measured: **100-1000x** fewer/cheaper simulator calls; a `n_iterations=100000` run drops from an estimated about 1 hour to **about 3.5s** (first call) / **about 1s** (cache warm, e.g. across a noise-level binary search).
+
+Both optimizations were verified for correctness against independent reference computations (noiseless QER = 0, matching statistics under noise, exact evolution cross-checked against `qiskit.quantum_info.Statevector`) before being adopted.
+
+> **Note**: `results/` is unchanged from the published values --> only relocated, not recomputed. Spot-checking the exact method against a couple of hypercube $(P, t)$ points turned up values that didn't match the checked-in file; this needs the authors' own investigation (it may be a stale cache, a stopping-heuristic difference, or something else) before any result file is regenerated. Treat `sweep_min_c` as a fast, exact *tool* available for that investigation, not as something that has already replaced the official numbers.
 
 ### Citation
 
